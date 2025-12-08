@@ -1,0 +1,269 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Xgent Agentic AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#050714;color:#e9eefc;}
+    header{padding:12px 18px;border-bottom:1px solid #1f2a55;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#090c20,#070a1a);}
+    .brand{display:flex;align-items:center;gap:10px;}
+    .brand-logo{width:30px;height:30px;border-radius:999px;border:1px solid #7aa2ff;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 0,#7aa2ff,#243b86);font-weight:600;}
+    .brand-title{font-size:18px;font-weight:600;}
+    .brand-sub{font-size:11px;color:#7b88a8;}
+    main{max-width:1200px;margin:16px auto;padding:0 16px 32px;}
+    .card{background:#101529;border-radius:16px;border:1px solid #1f2a55;padding:14px;box-shadow:0 18px 40px rgba(0,0,0,.5);}
+    .tabs{display:flex;gap:8px;margin-bottom:8px;border-bottom:1px solid #1f2a55;padding-bottom:4px;flex-wrap:wrap;}
+    .tab-btn{border:none;background:transparent;color:#7b88a8;font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer;}
+    .tab-btn.active{background:linear-gradient(135deg,#1f2a55,#243b86);color:#e9eefc;box-shadow:0 0 10px rgba(122,162,255,.5);}
+    .tab-panel{display:none;margin-top:8px;}
+    .tab-panel.active{display:block;}
+    label{display:block;font-size:12px;color:#7b88a8;margin-bottom:4px;}
+    textarea,input,select{width:100%;background:#050919;border:1px solid #242f5b;color:#e9eefc;padding:7px 9px;border-radius:8px;font-size:13px;box-sizing:border-box;}
+    textarea{resize:vertical;min-height:120px;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
+    .col{flex:1 1 0;min-width:160px;}
+    .btn{border:none;border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;background:linear-gradient(135deg,#7aa2ff,#5674ff);color:#fff;}
+    .btn.small{padding:5px 10px;font-size:12px;}
+    .output{margin-top:8px;padding:10px;border-radius:10px;background:#050a1b;border:1px solid #252f55;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;max-height:420px;overflow:auto;white-space:pre-wrap;}
+    .muted{font-size:11px;color:#7b88a8;}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-logo">X</div>
+    <div>
+      <div class="brand-title">Xgent Agentic AI</div>
+      <div class="brand-sub">Xcelium · UVM · Jira · PDF · Testcases · CCF</div>
+    </div>
+  </div>
+  <div class="muted">Local RAG · GGUF · BGE + FAISS</div>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="chat">Main Chat</button>
+      <button class="tab-btn" data-tab="pdf">PDF</button>
+      <button class="tab-btn" data-tab="tc">Testcases</button>
+      <button class="tab-btn" data-tab="ccf">CCF</button>
+      <button class="tab-btn" data-tab="sv">SV Rewrite</button>
+    </div>
+
+    <!-- Main Chat -->
+    <div id="tab-chat" class="tab-panel active">
+      <label>Ask Xgent</label>
+      <textarea id="chat-input" placeholder="Describe Jira issue, paste class/CCF, or ask debug question…"></textarea>
+      <div class="row" style="margin-top:8px;">
+        <div class="col">
+          <label>Mode</label>
+          <select id="chat-mode">
+            <option value="auto">Auto (planner)</option>
+            <option value="pdf">PDF QA</option>
+            <option value="code">Code / debug</option>
+            <option value="sv_rewrite">SV rewrite</option>
+            <option value="ccf_generate">CCF generate</option>
+          </select>
+        </div>
+      </div>
+      <button id="chat-send" class="btn" style="margin-top:8px;">Ask Xgent</button>
+      <div class="muted" id="route-label" style="margin-top:6px;">Waiting…</div>
+      <div id="chat-output" class="output">Response will appear here.</div>
+    </div>
+
+    <!-- PDF Tab -->
+    <div id="tab-pdf" class="tab-panel">
+      <label>Upload PDF</label>
+      <div class="row">
+        <div class="col"><input id="pdf-file" type="file" accept="application/pdf"/></div>
+        <div><button id="pdf-upload-btn" class="btn small">Upload &amp; index</button></div>
+      </div>
+      <div id="pdf-status" class="muted" style="margin-top:6px;"></div>
+      <div style="margin-top:10px;">
+        <label>Indexed PDFs</label>
+        <div id="pdf-list" class="output" style="max-height:220px;"></div>
+      </div>
+    </div>
+
+    <!-- Testcase Tab -->
+    <div id="tab-tc" class="tab-panel">
+      <label>Upload UVM testcase CSV</label>
+      <div class="row">
+        <div class="col"><input id="tc-file" type="file" accept=".csv"/></div>
+        <div><button id="tc-upload-btn" class="btn small">Train testcase model</button></div>
+      </div>
+      <div id="tc-status" class="muted" style="margin-top:6px;"></div>
+      <div style="margin-top:12px;">
+        <label>Match testcases</label>
+        <textarea id="tc-query" rows="3" placeholder="Describe scenario…"></textarea>
+        <button id="tc-match-btn" class="btn small" style="margin-top:6px;">Find testcases</button>
+        <div id="tc-match-out" class="output" style="max-height:220px;"></div>
+      </div>
+    </div>
+
+    <!-- CCF Tab -->
+    <div id="tab-ccf" class="tab-panel">
+      <h4>CCF optimiser</h4>
+      <label>Upload 2–3 CCF files</label>
+      <input id="ccf-files" type="file" multiple accept=".ccf,.txt"/>
+      <button id="ccf-run-btn" class="btn small" style="margin-top:6px;">Analyse redundancy</button>
+      <div id="ccf-out" class="output" style="max-height:260px;"></div>
+
+      <h4 style="margin-top:16px;">CCF generator</h4>
+      <label>Description / Jira context</label>
+      <textarea id="ccf-desc"></textarea>
+      <button id="ccfgen-run-btn" class="btn small" style="margin-top:6px;">Generate CCF</button>
+      <div id="ccfgen-out" class="output" style="max-height:260px;"></div>
+    </div>
+
+    <!-- SystemVerilog Rewrite Tab -->
+    <div id="tab-sv" class="tab-panel">
+      <label>Original SV/UVM code</label>
+      <textarea id="sv-code" rows="10"></textarea>
+      <label style="margin-top:6px;">Rewrite goal (optional)</label>
+      <input id="sv-goal" placeholder="e.g. optimise scoreboard, refactor sequence…"/>
+      <button id="sv-rewrite-btn" class="btn small" style="margin-top:6px;">Rewrite</button>
+      <div id="sv-out" class="output" style="max-height:320px;"></div>
+    </div>
+
+  </div>
+</main>
+<script>
+function switchTab(name){
+  document.querySelectorAll(".tab-btn").forEach(b=>{
+    b.classList.toggle("active",b.dataset.tab===name);
+  });
+  document.querySelectorAll(".tab-panel").forEach(p=>{
+    p.classList.toggle("active",p.id==="tab-"+name);
+  });
+}
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>switchTab(btn.dataset.tab));
+});
+
+async function apiPost(path,body){
+  const res = await fetch(path,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body||{})
+  });
+  return await res.json();
+}
+
+async function handleChat(){
+  const text = document.getElementById("chat-input").value.trim();
+  const mode = document.getElementById("chat-mode").value;
+  const out = document.getElementById("chat-output");
+  const routeLabel = document.getElementById("route-label");
+  if(!text){out.textContent="Please type something.";return;}
+  let route = mode;
+  if(mode==="auto"){
+    const plan = await apiPost("/api/agent_route",{text});
+    route = plan.ok ? plan.worker : "code";
+  }
+  routeLabel.textContent = "Route: "+route;
+  out.textContent = "Thinking…";
+  try{
+    if(route==="pdf"){
+      const r = await apiPost("/api/pdf_query",{q:text,top_k:6});
+      if(!r.ok){out.textContent="PDF error: "+r.error;return;}
+      const ctx = (r.results||[]).map(
+        x=>`[${x.doc_name} p${x.page}] ${x.score.toFixed(3)}\n${x.text}`
+      ).join("\n\n");
+      const ans = await apiPost("/api/llm_chat",{
+        text:"Use ONLY this PDF context:\n\n"+ctx+"\n\nQuestion:\n"+text
+      });
+      out.textContent = (ctx?("PDF ctx:\n"+ctx+"\n\n---\n"):"") + (ans.text||"");
+      return;
+    }
+    if(route==="sv_rewrite"){
+      const r = await apiPost("/api/sv_rewrite",{code:text,goal:""});
+      out.textContent = r.ok ? (r.optimised||"") : ("Error: "+r.error);
+      return;
+    }
+    if(route==="ccf_generate"){
+      const r = await apiPost("/api/ccf_generate",{description:text,jira_id:"",extra:""});
+      out.textContent = r.ok ? (r.ccf_code||"") : ("Error: "+r.error);
+      return;
+    }
+    const r = await apiPost("/api/llm_chat",{text});
+    out.textContent = r.ok ? (r.text||"") : ("Error: "+r.error);
+  }catch(e){
+    out.textContent = "Error: "+e;
+  }
+}
+document.getElementById("chat-send").addEventListener("click",handleChat);
+
+// PDF
+document.getElementById("pdf-upload-btn").addEventListener("click",async()=>{
+  const f = document.getElementById("pdf-file").files[0];
+  const status = document.getElementById("pdf-status");
+  if(!f){status.textContent="Select PDF first.";return;}
+  const fd = new FormData(); fd.append("file",f);
+  const res = await fetch("/api/pdf_upload",{method:"POST",body:fd});
+  const j = await res.json();
+  status.textContent = j.ok ? `Indexed ${j.name} (${j.chunks} chunks)` : "Error: "+j.error;
+  const list = await apiPost("/api/pdf_list",{});
+  const box = document.getElementById("pdf-list");
+  if(list.ok){
+    const docs = list.docs||[];
+    box.textContent = docs.length
+      ? docs.map(d=>`Doc ${d.id} | ${d.name} | chunks=${d.chunks}`).join("\n")
+      : "No PDFs.";
+  }else box.textContent="Error: "+list.error;
+});
+
+// Testcases
+document.getElementById("tc-upload-btn").addEventListener("click",async()=>{
+  const f = document.getElementById("tc-file").files[0];
+  const status = document.getElementById("tc-status");
+  if(!f){status.textContent="Select CSV first.";return;}
+  const fd = new FormData(); fd.append("file",f);
+  const res = await fetch("/api/testcase_upload_train",{method:"POST",body:fd});
+  const j = await res.json();
+  status.textContent = j.ok ? `Trained ${j.docs} rows` : "Error: "+j.error;
+});
+document.getElementById("tc-match-btn").addEventListener("click",async()=>{
+  const text = document.getElementById("tc-query").value;
+  const box = document.getElementById("tc-match-out");
+  box.textContent = "Searching…";
+  const r = await apiPost("/api/testcase_match",{text});
+  if(!r.ok){box.textContent="Error: "+r.error;return;}
+  const hits = r.results||[];
+  box.textContent = hits.length
+    ? hits.map(h=>`${h.id} | ${h.name} | score=${h.score.toFixed(3)}`).join("\n\n")
+    : "No hits.";
+});
+
+// CCF
+document.getElementById("ccf-run-btn").addEventListener("click",async()=>{
+  const files = document.getElementById("ccf-files").files;
+  const box = document.getElementById("ccf-out");
+  if(!files.length){box.textContent="Select CCF files.";return;}
+  const fd = new FormData();
+  for(let i=0;i<files.length;i++) fd.append("file",files[i]);
+  const res = await fetch("/api/ccf_redundancy",{method:"POST",body:fd});
+  const j = await res.json();
+  box.textContent = j.ok ? "Summary:\n"+JSON.stringify(j.summary,null,2) : "Error: "+j.error;
+});
+document.getElementById("ccfgen-run-btn").addEventListener("click",async()=>{
+  const desc = document.getElementById("ccf-desc").value;
+  const box = document.getElementById("ccfgen-out");
+  if(!desc.trim()){box.textContent="Type description first.";return;}
+  const r = await apiPost("/api/ccf_generate",{description:desc,jira_id:"",extra:""});
+  box.textContent = r.ok ? (r.ccf_code||"") : "Error: "+r.error;
+});
+
+// SV rewrite
+document.getElementById("sv-rewrite-btn").addEventListener("click",async()=>{
+  const code = document.getElementById("sv-code").value;
+  const goal = document.getElementById("sv-goal").value;
+  const box = document.getElementById("sv-out");
+  if(!code.trim()){box.textContent="Paste SV code.";return;}
+  box.textContent="Rewriting…";
+  const r = await apiPost("/api/sv_rewrite",{code,goal});
+  box.textContent = r.ok ? (r.optimised||"") : "Error: "+r.error;
+});
+</script>
+</body>
+</html>
