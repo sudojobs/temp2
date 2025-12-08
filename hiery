@@ -1,0 +1,12 @@
+xgent_agentic_ai/
+  server.py
+  config.json
+  README.txt
+  ui/
+    index.html
+  recipes/
+    debug_recipes.yaml
+  models/
+    (put GGUF + BGE model here)
+  indices/
+    (auto-created at runtime)
