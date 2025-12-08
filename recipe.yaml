@@ -1,0 +1,12 @@
+perf:
+  flags: ["-newperf","-plusperf","-profile"]
+  notes: "Performance bottleneck suspected."
+memory:
+  flags: ["-disable_opt"]
+  notes: "Memory leak / OOM suspected."
+coverage:
+  flags: ["-cov","-ccf"]
+  notes: "Coverage / CCF investigation."
+cdc:
+  flags: ["-cdc","-assert"]
+  notes: "CDC issues suspected."
