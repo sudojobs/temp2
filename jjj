@@ -1,0 +1,72 @@
+Xgent Agentic AI – Local RAG + GGUF
+
+Features:
+- Offline LLM via llama_cpp + Meta-Llama-3.1-8B-Instruct-Q4_K_L.gguf
+- BGE-base-en-v1.5 embeddings (SentenceTransformers)
+- FAISS-accelerated vector search (if faiss-cpu installed)
+- PDF RAG: upload PDFs, query chunks
+- UVM testcase RAG: CSV (id,name,uvm_version,summary,description,code)
+- CCF redundancy analysis + CCF generator (RAG + LLM)
+- SystemVerilog/UVM rewrite assistant
+
+Setup:
+
+1) Create venv:
+
+   python -m venv .venv
+   .venv\Scripts\activate   (Windows)
+   source .venv/bin/activate (Linux/macOS)
+
+2) Install dependencies:
+
+   pip install --upgrade pip
+   pip install sentence-transformers torch PyPDF2 numpy llama-cpp-python faiss-cpu
+
+3) Download models manually:
+
+   a) LLM (GGUF)
+      - Place file here:
+        models/Meta-Llama-3.1-8B-Instruct-Q4_K_L.gguf
+
+      (e.g. from a GGUF mirror of Meta-Llama-3.1-8B-Instruct-Q4_K_L)
+
+   b) Embedding model
+      - Clone or download BAAI/bge-base-en-v1.5 from Hugging Face
+      - Put its folder as:
+        models/bge-base-en-v1.5/
+
+4) Run the server:
+
+   cd xgent_agentic_ai
+   python server.py
+
+5) Open in browser:
+
+   http://localhost:8099
+
+Usage:
+
+- Main Chat:
+  - Mode = Auto → planner decides between PDF, CCF, SV rewrite, or plain LLM.
+  - Mode = PDF → uses PDF RAG explicitly.
+  - Mode = SV rewrite → uses /api/sv_rewrite endpoint.
+  - Mode = CCF generate → uses /api/ccf_generate.
+
+- PDF tab:
+  - Upload PDF and index.
+  - List shows ID/name/chunk count.
+  - Then questions from Main Chat with PDF mode or Auto can use those chunks.
+
+- Testcases tab:
+  - Upload CSV with columns:
+      id, name, uvm_version, summary, description, code
+  - Then query similar testcases by description.
+
+- CCF tab:
+  - Redundancy: upload 2–3 .ccf/.txt files and analyse overlap.
+  - Generator: describe coverage goal, get suggested CCF content.
+
+- SV Rewrite tab:
+  - Paste SystemVerilog/UVM class or module.
+  - Optional goal text.
+  - Get optimised/refactored code from LLM.
